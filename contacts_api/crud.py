@@ -24,6 +24,7 @@ def get_contacts(db: Session, user_id: int, skip: int = 0, limit: int = 100):
     return db.query(models.Contact).filter(models.Contact.owner_id == user_id).offset(skip).limit(limit).all()
 
 def get_contact(db: Session, contact_id: int, user_id: int):
+    # Поиск одного конкретного контакта текущего пользователя
     return db.query(models.Contact).filter(models.Contact.id == contact_id, models.Contact.owner_id == user_id).first()
 
 def create_contact(db: Session, contact: schemas.ContactCreate, user_id: int):
@@ -31,6 +32,16 @@ def create_contact(db: Session, contact: schemas.ContactCreate, user_id: int):
     db.add(db_contact)
     db.commit()
     db.refresh(db_contact)
+    return db_contact
+
+def update_contact(db: Session, contact_id: int, contact_update: schemas.ContactCreate, user_id: int):
+
+    db_contact = get_contact(db, contact_id, user_id)
+    if db_contact:
+        for key, value in contact_update.model_dump().items():
+            setattr(db_contact, key, value)
+        db.commit()
+        db.refresh(db_contact)
     return db_contact
 
 def delete_contact(db: Session, contact_id: int, user_id: int):
