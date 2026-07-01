@@ -1,3 +1,4 @@
+import os
 import pytest
 import random
 from fastapi.testclient import TestClient
@@ -6,9 +7,9 @@ from sqlalchemy.orm import sessionmaker
 
 from main import app
 from database import get_db
-from models import User, Contact, Base
+from models import Base
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
+SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -28,8 +29,6 @@ client = TestClient(app)
 
 @pytest.fixture(scope="module", autouse=True)
 def setup_database():
-    User.metadata.create_all(bind=engine)
-    Contact.metadata.create_all(bind=engine)
     Base.metadata.create_all(bind=engine)
     yield
     Base.metadata.drop_all(bind=engine)
