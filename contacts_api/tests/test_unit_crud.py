@@ -5,11 +5,15 @@ import crud
 import models
 import schemas
 
+
 class TestCRUD(unittest.TestCase):
+
     def setUp(self):
         self.db = MagicMock(spec=Session)
         self.user_id = 1
-        self.mock_user = models.User(id=1, email="test@mail.com", password="hashed_password")
+        self.mock_user = models.User(
+            id=1, email="test@mail.com", password="hashed_password"
+        )
 
     def test_get_user_by_email(self):
         self.db.query().filter().first.return_value = self.mock_user
@@ -28,7 +32,10 @@ class TestCRUD(unittest.TestCase):
         self.assertEqual(self.mock_user.refresh_token, "new_token")
 
     def test_get_contacts(self):
-        contacts = [models.Contact(id=1, first_name="A"), models.Contact(id=2, first_name="B")]
+        contacts = [
+            models.Contact(id=1, first_name="A"),
+            models.Contact(id=2, first_name="B"),
+        ]
         self.db.query().filter().offset().limit().all.return_value = contacts
         result = crud.get_contacts(self.db, user_id=self.user_id)
         self.assertEqual(len(result), 2)
@@ -48,7 +55,11 @@ class TestCRUD(unittest.TestCase):
         contact = models.Contact(id=1, first_name="Old", owner_id=self.user_id)
         self.db.query().filter().first.return_value = contact
         contact_update = schemas.ContactCreate(
-            first_name="New", last_name="Doe", email="j@mail.com", phone="123", birthday="2000-01-01"
+            first_name="New",
+            last_name="Doe",
+            email="j@mail.com",
+            phone="123",
+            birthday="2000-01-01",
         )
         result = crud.update_contact(self.db, 1, contact_update, self.user_id)
         self.assertEqual(result.first_name, "New")
@@ -56,7 +67,11 @@ class TestCRUD(unittest.TestCase):
     def test_update_contact_not_found(self):
         self.db.query().filter().first.return_value = None
         contact_update = schemas.ContactCreate(
-            first_name="New", last_name="Doe", email="j@mail.com", phone="123", birthday="2000-01-01"
+            first_name="New",
+            last_name="Doe",
+            email="j@mail.com",
+            phone="123",
+            birthday="2000-01-01",
         )
         result = crud.update_contact(self.db, 999, contact_update, self.user_id)
         self.assertIsNone(result)
@@ -72,5 +87,6 @@ class TestCRUD(unittest.TestCase):
         result = crud.delete_contact(self.db, 999, self.user_id)
         self.assertIsNone(result)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

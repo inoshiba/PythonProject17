@@ -4,13 +4,18 @@ import random
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
 from main import app
 from database import get_db
 from models import Base
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -55,14 +60,20 @@ def test_full_application_flow(unique_user):
     assert "access_token" in tokens
     assert "refresh_token" in tokens
 
-    bad_login = client.post("/api/auth/login", data={"username": unique_user["email"], "password": "wrong_password"})
+    bad_login = client.post(
+        "/api/auth/login",
+        data={"username": unique_user["email"], "password": "wrong_password"},
+    )
     assert bad_login.status_code == 401
 
     headers = {"Authorization": f"Bearer {tokens['access_token']}"}
 
     contact_data = {
-        "first_name": "TestContact", "last_name": "Doe",
-        "email": "contact@mail.com", "phone": "+380501112233", "birthday": "1990-01-01"
+        "first_name": "TestContact",
+        "last_name": "Doe",
+        "email": "contact@mail.com",
+        "phone": "+380501112233",
+        "birthday": "1990-01-01",
     }
 
     create_resp = client.post("/api/contacts", json=contact_data, headers=headers)
@@ -81,11 +92,15 @@ def test_full_application_flow(unique_user):
     assert get_none.status_code == 404
 
     contact_data["first_name"] = "UpdatedName"
-    update_resp = client.put(f"/api/contacts/{contact_id}", json=contact_data, headers=headers)
+    update_resp = client.put(
+        f"/api/contacts/{contact_id}", json=contact_data, headers=headers
+    )
     assert update_resp.status_code == 200
     assert update_resp.json()["first_name"] == "UpdatedName"
 
-    update_none = client.put("/api/contacts/99999", json=contact_data, headers=headers)
+    update_none = client.put(
+        "/api/contacts/99999", json=contact_data, headers=headers
+    )
     assert update_none.status_code == 404
 
     delete_resp = client.delete(f"/api/contacts/{contact_id}", headers=headers)
@@ -94,7 +109,9 @@ def test_full_application_flow(unique_user):
     delete_none = client.delete("/api/contacts/99999", headers=headers)
     assert delete_none.status_code == 404
 
-    refresh_resp = client.post(f"/api/auth/refresh?refresh_token={tokens['refresh_token']}")
+    refresh_resp = client.post(
+        f"/api/auth/refresh?refresh_token={tokens['refresh_token']}"
+    )
     assert refresh_resp.status_code == 200
     assert "access_token" in refresh_resp.json()
 
@@ -106,5 +123,7 @@ def test_auth_errors_and_dependencies():
     resp = client.get("/api/contacts")
     assert resp.status_code == 401
 
-    resp_bad_token = client.get("/api/contacts", headers={"Authorization": "Bearer bad_token"})
+    resp_bad_token = client.get(
+        "/api/contacts", headers={"Authorization": "Bearer bad_token"}
+    )
     assert resp_bad_token.status_code == 401
